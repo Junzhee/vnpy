@@ -40,3 +40,7 @@ _templates
 
 # Alpha
 lab/
+
+
+data/*
+examples/*

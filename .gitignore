@@ -44,3 +44,5 @@ lab/
 
 data/*
 examples/*
+
+vnpy_ctastrategy/my_strategies/*

@@ -52,30 +52,30 @@ class BacktestingEngine:
 
     def __init__(self) -> None:
         """"""
-        self.vt_symbol: str = ""
-        self.symbol: str = ""
-        self.exchange: Exchange
-        self.start: datetime
-        self.end: datetime
-        self.rate: float = 0
-        self.slippage: float = 0
-        self.size: float = 1
-        self.pricetick: float = 0
-        self.capital: int = 1_000_000
-        self.risk_free: float = 0
-        self.annual_days: int = 240
-        self.half_life: int = 120
-        self.mode: BacktestingMode = BacktestingMode.BAR
+        self.vt_symbol: str = "" # 唯一的交易标识
+        self.symbol: str = "" # 交易品种
+        self.exchange: Exchange # 交易所
+        self.start: datetime # 回测开始时间
+        self.end: datetime # 回测结束时间
+        self.rate: float = 0 # 手续费
+        self.slippage: float = 0 # 滑点
+        self.size: float = 1 # 合约大小
+        self.pricetick: float = 0 # 最小价格变动
+        self.capital: int = 1_000_000 # 初始资金
+        self.risk_free: float = 0 # 无风险利率 -> 用于计算夏普比率等
+        self.annual_days: int = 365 # 年交易日 - crypto 365, stock 240
+        self.half_life: int = 180 # 指数加权平均的半衰期
+        self.mode: BacktestingMode = BacktestingMode.BAR  # BAR or TICK
 
-        self.strategy_class: type[CtaTemplate]
+        self.strategy_class: type[CtaTemplate] 
         self.strategy: CtaTemplate
         self.tick: TickData
         self.bar: BarData
         self.datetime: datetime = datetime(1970, 1, 1)
 
-        self.interval: Interval
+        self.interval: Interval # K线周期
         self.days: int = 0
-        self.callback: Callable
+        self.callback: Callable # 回调函数，用于在特定事件发生时被调用
         self.history_data: list = []
 
         self.stop_order_count: int = 0
@@ -172,8 +172,10 @@ class BacktestingEngine:
 
         self.history_data.clear()       # Clear previously loaded history data
 
-        # Load 30 days of data each time and allow for progress update
+        # Load some data each time and allow for progress update
+        # 进度更新是为了了防止加载数据时间过长而没有任何反馈
         total_days: int = (self.end - self.start).days
+        # 用于进度更新的时间间隔，取总天数的十分之一，最少1天
         progress_days: int = max(int(total_days / 10), 1)
         progress_delta: timedelta = timedelta(days=progress_days)
         interval_delta: timedelta = INTERVAL_DELTA_MAP[self.interval]
@@ -182,6 +184,7 @@ class BacktestingEngine:
         end: datetime = self.start + progress_delta
         progress: float = 0
 
+        # 用于进度条显示
         while start < self.end:
             progress_bar: str = "#" * int(progress * 10 + 1)
             self.output(_("加载进度：{} [{:.0%}]").format(progress_bar, progress))
@@ -614,14 +617,16 @@ class BacktestingEngine:
             self.daily_results[d] = DailyResult(d, price)
 
     def new_bar(self, bar: BarData) -> None:
-        """"""
+ 
         self.bar = bar
         self.datetime = bar.datetime
-
+        # 先撮合限价单
         self.cross_limit_order()
+        # 再撮合Stop order
         self.cross_stop_order()
+        # 推送最新的数据
         self.strategy.on_bar(bar)
-
+        # 结算
         self.update_daily_close(bar.close_price)
 
     def new_tick(self, tick: TickData) -> None:
@@ -639,6 +644,7 @@ class BacktestingEngine:
         """
         Cross limit order with last bar/tick data.
         """
+
         if self.mode == BacktestingMode.BAR:
             long_cross_price = self.bar.low_price
             short_cross_price = self.bar.high_price
@@ -673,16 +679,19 @@ class BacktestingEngine:
                 continue
 
             # Push order udpate with status "all traded" (filled).
+            # 假设全部成交
             order.traded = order.volume
             order.status = Status.ALLTRADED
             self.strategy.on_order(order)
 
+            # Remove from active order list.
             if order.vt_orderid in self.active_limit_orders:
                 self.active_limit_orders.pop(order.vt_orderid)
 
             # Push trade update
             self.trade_count += 1
 
+            # 这里考虑了跳空的情况，跳空开盘时候以开盘价成交
             if long_cross:
                 trade_price = min(order.price, long_best_price)
                 pos_change = order.volume
@@ -1025,27 +1034,29 @@ class DailyResult:
 
     def __init__(self, date: Date, close_price: float) -> None:
         """"""
-        self.date: Date = date
-        self.close_price: float = close_price
-        self.pre_close: float = 0
+        self.date: Date = date  # Trading date
+        self.close_price: float = close_price # Closing price of the day
+        self.pre_close: float = 0 # Previous day's closing price
 
-        self.trades: list[TradeData] = []
-        self.trade_count: int = 0
+        self.trades: list[TradeData] = []   
+        self.trade_count: int = 0   
 
-        self.start_pos: float = 0
-        self.end_pos: float = 0
+        self.start_pos: float = 0 # Position at day start
+        self.end_pos: float = 0 # Position at day end
 
         self.turnover: float = 0
         self.commission: float = 0
         self.slippage: float = 0
 
-        self.trading_pnl: float = 0
-        self.holding_pnl: float = 0
+        self.trading_pnl: float = 0 # Pnl from trading during the day
+        self.holding_pnl: float = 0 # Pnl from holding position at day start
         self.total_pnl: float = 0
         self.net_pnl: float = 0
 
     def add_trade(self, trade: TradeData) -> None:
-        """"""
+        """
+        Add a trade to the daily result.
+        """
         self.trades.append(trade)
 
     def calculate_pnl(
@@ -1068,11 +1079,12 @@ class DailyResult:
         self.start_pos = start_pos
         self.end_pos = start_pos
 
-        self.holding_pnl = self.start_pos * (self.close_price - self.pre_close) * size
+        # 计算持仓盈亏
+        self.holding_pnl = self.start_pos * (self.close_price - self.pre_close) * size 
 
         # Trading pnl is the pnl from new trade during the day
+        # 计算交易盈亏
         self.trade_count = len(self.trades)
-
         for trade in self.trades:
             if trade.direction == Direction.LONG:
                 pos_change = trade.volume

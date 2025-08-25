@@ -3,6 +3,8 @@ from vnpy_ctastrategy.backtesting import BacktestingEngine
 from vnpy_ctastrategy.strategies.atr_rsi_strategy import (
     AtrRsiStrategy,
 )
+
+
 from vnpy_ctastrategy.strategies.double_ma_strategy import (
     DoubleMaStrategy,
 )

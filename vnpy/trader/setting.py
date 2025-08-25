@@ -29,15 +29,15 @@ SETTINGS: dict = {
     "datafeed.password": "",
 
     "database.timezone": get_localzone_name(),
-    "database.name": "sqlite",
-    "database.database": "database.db",
-    "database.host": "",
-    "database.port": 0,
+    "database.name": "mongodb",
+    "database.database": "vnpy",
+    "database.host": "127.0.0.1",
+    "database.port": 27017,
     "database.user": "",
     "database.password": ""
 }
 
 
 # Load global setting from json file.
-SETTING_FILENAME: str = "vt_setting.json"
-SETTINGS.update(load_json(SETTING_FILENAME))
+# SETTING_FILENAME: str = "vt_setting.json"
+# SETTINGS.update(load_json(SETTING_FILENAME))

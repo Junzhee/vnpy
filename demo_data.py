@@ -5,13 +5,7 @@
 #
 # 用法示例：
 #   下载到 CSV（断点续传）：
-#     python scripts/demo_data.py --symbol BTCUSDT --start 2020-01-01
-#
-#   下载并导入数据库（UTC 时区，1m）：
-#     python scripts/demo_data.py --symbol BTCUSDT --start 2020-01-01 --to-db
-#
-#   覆盖 CSV、并导入数据库、指定交易所为 LOCAL：
-#     python scripts/demo_data.py --symbol BTCUSDT --start 2020-01-01 --overwrite --exchange LOCAL --to-db
+#     python demo_data.py --symbol BTCUSDT --start 2020-01-01 --end 2025-08-25 --to-db
 #
 # 备注：
 # - 数据库导入逻辑对齐 vnpy_datamanager/engine.py::import_data_from_csv
@@ -34,6 +28,7 @@ from vnpy.trader.constant import Exchange, Interval
 from vnpy.trader.utility import ZoneInfo
 from vnpy.trader.object import BarData
 from vnpy.trader.database import get_database
+from vnpy.trader.setting import SETTINGS
 
 BINANCE_SPOT_BASE = "https://api.binance.com"
 DATA_DIR = os.path.join(".", "data", "binance")

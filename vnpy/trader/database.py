@@ -145,6 +145,7 @@ def get_database() -> BaseDatabase:
 
     # Read database related global setting
     database_name: str = SETTINGS["database.name"]
+    print("database_name:", database_name)
     module_name: str = f"vnpy_{database_name}"
 
     # Try to import database module
